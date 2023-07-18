@@ -97,6 +97,8 @@ struct SnippetRowView: View {
     }
 }
 
+//test
+
 /*struct SnippetRowView_Previews: PreviewProvider {
     static let snippet = Snippet(startTime: 0, endTime: 10, name: "Sample Snippet")
     static let player = AVAudioPlayer()
