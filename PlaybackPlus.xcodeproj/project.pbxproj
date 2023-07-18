@@ -12,7 +12,9 @@
 		CEA11D7C2A66F48300065C25 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = CEA11D7B2A66F48300065C25 /* FirebaseAuth */; };
 		CEA11D7E2A66F48300065C25 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = CEA11D7D2A66F48300065C25 /* FirebaseCrashlytics */; };
 		CEA11D822A671A0C00065C25 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA11D812A671A0C00065C25 /* LoginView.swift */; };
-		CEA11D842A671C6B00065C25 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = CEA11D832A671C6B00065C25 /* GoogleService-Info.plist */; };
+		CEA11D862A671E2B00065C25 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = CEA11D852A671E2B00065C25 /* GoogleService-Info.plist */; };
+		CEA11D882A67299200065C25 /* FirebaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA11D872A67299200065C25 /* FirebaseService.swift */; };
+		CEA11D8A2A672EB000065C25 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = CEA11D892A672EB000065C25 /* FirebaseFirestore */; };
 		CEB2417C2A5CABB0002D5345 /* PlaybackPlusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEB2417B2A5CABB0002D5345 /* PlaybackPlusApp.swift */; };
 		CEB2417E2A5CABB0002D5345 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEB2417D2A5CABB0002D5345 /* ContentView.swift */; };
 		CEB241802A5CABB1002D5345 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CEB2417F2A5CABB1002D5345 /* Assets.xcassets */; };
@@ -27,7 +29,8 @@
 
 /* Begin PBXFileReference section */
 		CEA11D812A671A0C00065C25 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
-		CEA11D832A671C6B00065C25 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "../../../Downloads/GoogleService-Info.plist"; sourceTree = "<group>"; };
+		CEA11D852A671E2B00065C25 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "../../../Downloads/GoogleService-Info.plist"; sourceTree = "<group>"; };
+		CEA11D872A67299200065C25 /* FirebaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseService.swift; sourceTree = "<group>"; };
 		CEB241782A5CABB0002D5345 /* PlaybackPlus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PlaybackPlus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CEB2417B2A5CABB0002D5345 /* PlaybackPlusApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackPlusApp.swift; sourceTree = "<group>"; };
 		CEB2417D2A5CABB0002D5345 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -52,6 +55,7 @@
 				CEA11D7E2A66F48300065C25 /* FirebaseCrashlytics in Frameworks */,
 				CEB241922A5CD7F2002D5345 /* MediaPlayer.framework in Frameworks */,
 				CEA11D7C2A66F48300065C25 /* FirebaseAuth in Frameworks */,
+				CEA11D8A2A672EB000065C25 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,11 +88,12 @@
 				CEB241892A5CABD1002D5345 /* EmptyMusicPlayerView.swift */,
 				CEB4777C2A5DE51300BA38C4 /* SongPlayerView.swift */,
 				CEB2418D2A5CAF70002D5345 /* MusicPlayerView.swift */,
+				CEA11D872A67299200065C25 /* FirebaseService.swift */,
 				CEA11D812A671A0C00065C25 /* LoginView.swift */,
 				CEB2418B2A5CAC97002D5345 /* DocumentPicker.swift */,
 				CEB2417F2A5CABB1002D5345 /* Assets.xcassets */,
 				CEB2418F2A5CD79F002D5345 /* Info.plist */,
-				CEA11D832A671C6B00065C25 /* GoogleService-Info.plist */,
+				CEA11D852A671E2B00065C25 /* GoogleService-Info.plist */,
 				CEB241812A5CABB1002D5345 /* Preview Content */,
 			);
 			path = PlaybackPlus;
@@ -131,6 +136,7 @@
 				CEA11D792A66F48300065C25 /* FirebaseAnalyticsSwift */,
 				CEA11D7B2A66F48300065C25 /* FirebaseAuth */,
 				CEA11D7D2A66F48300065C25 /* FirebaseCrashlytics */,
+				CEA11D892A672EB000065C25 /* FirebaseFirestore */,
 			);
 			productName = PlaybackPlus;
 			productReference = CEB241782A5CABB0002D5345 /* PlaybackPlus.app */;
@@ -178,7 +184,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CEB241832A5CABB1002D5345 /* Preview Assets.xcassets in Resources */,
-				CEA11D842A671C6B00065C25 /* GoogleService-Info.plist in Resources */,
+				CEA11D862A671E2B00065C25 /* GoogleService-Info.plist in Resources */,
 				CEB241802A5CABB1002D5345 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -194,6 +200,7 @@
 				CEB2418E2A5CAF70002D5345 /* MusicPlayerView.swift in Sources */,
 				CEB2418C2A5CAC97002D5345 /* DocumentPicker.swift in Sources */,
 				CEB2418A2A5CABD1002D5345 /* EmptyMusicPlayerView.swift in Sources */,
+				CEA11D882A67299200065C25 /* FirebaseService.swift in Sources */,
 				CEB2417E2A5CABB0002D5345 /* ContentView.swift in Sources */,
 				CEE235972A60A3A60067FBFF /* SnippetRowView.swift in Sources */,
 				CEA11D822A671A0C00065C25 /* LoginView.swift in Sources */,
@@ -436,6 +443,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CEA11D762A66F48300065C25 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCrashlytics;
+		};
+		CEA11D892A672EB000065C25 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEA11D762A66F48300065C25 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
