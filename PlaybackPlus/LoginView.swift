@@ -27,7 +27,7 @@ struct LoginView: View {
     }
     
     private func login() {
-        sessionManager.login(email: email, password: password) { result in
+        sessionManager.login(email: email, password: password) { result in 
             switch result {
             case .success:
                 // Handle successful login

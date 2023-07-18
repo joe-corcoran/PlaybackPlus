@@ -6,9 +6,14 @@
 //comment for initial commit
 import SwiftUI
 import AVFoundation
+import FirebaseAuth
+import FirebaseFirestore
+import Firebase
+import FirebaseAnalytics
 
 struct MusicPlayerView: View {
-    @State var song: Song
+    
+   @State var song: Song
     @Binding var songs: [Song]
     @State private var isShowingNoteEditor = false
      @State private var editingSnippet: Snippet? = nil
@@ -31,6 +36,14 @@ struct MusicPlayerView: View {
     @State private var isShowingSaveSnippetPopup = false
     @State private var snippetName: String = ""
     
+    private var firestore: Firestore = Firestore.firestore()
+    
+    public init(song: Song, songs: Binding<[Song]>) {
+           self._song = State(initialValue: song)
+           self._songs = songs
+       }
+    
+
     @Environment(\.presentationMode) private var presentationMode
     
     var body: some View {
@@ -133,6 +146,7 @@ struct MusicPlayerView: View {
         }
         .onDisappear {
             player.stop()
+            saveSongToFirestore()
             timer?.invalidate()
             timer = nil
             if let index = songs.firstIndex(where: { $0.id == song.id }) {
@@ -141,6 +155,35 @@ struct MusicPlayerView: View {
         }
     }
     
+    private func saveSongToFirestore() {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            return
+        }
+
+        let songData: [String: Any] = [
+            "url": song.url.absoluteString,
+            "snippets": song.snippets.map { snippet in
+                return [
+                    "id": snippet.id.uuidString,
+                    "startTime": snippet.startTime,
+                    "endTime": snippet.endTime,
+                    "name": snippet.name,
+                    "isPlaying": snippet.isPlaying,
+                    "note": snippet.note
+                ]
+            }
+        ]
+
+        let songsCollectionRef = Firestore.firestore().collection("users").document(userId).collection("songs")
+        songsCollectionRef.document(song.id.uuidString).setData(songData) { error in
+            if let error = error {
+                print("Failed to save song to Firestore: \(error)")
+            } else {
+                print("Song saved to Firestore")
+            }
+        }
+    }
+
     
     private func restartSnippet(_ snippet: Snippet) {
         if let player = self.player {
