@@ -25,6 +25,7 @@ struct MusicPlayerView: View {
     @State private var timer: Timer? = nil
     @State private var duration: TimeInterval = 0
     @State private var startTime: TimeInterval = 0
+    @State private var pauseTime: TimeInterval? = nil
     @State private var endTime: TimeInterval = 0
     @State private var isScrubbing = false
     @State private var isShowingSaveSnippetPopup = false
@@ -78,30 +79,47 @@ struct MusicPlayerView: View {
             }
         }
         
-        List(song.snippets) { snippet in
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text("\(formatTimeInterval(snippet.startTime)) - \(formatTimeInterval(snippet.endTime))")
-                        Text(snippet.name)
-                            .font(.caption)
+        // Snippets list
+        List(song.snippets.indices, id: \.self) { index in
+            HStack {
+                VStack(alignment: .leading) {
+                    Text("\(formatTimeInterval(song.snippets[index].startTime)) - \(formatTimeInterval(song.snippets[index].endTime))")
+                    Text(song.snippets[index].name)
+                        .font(.caption)
+                }
+                Spacer()
+                Image(systemName: "backward.fill")
+                    .resizable()
+                    .frame(width: 20, height: 20)
+                    .foregroundColor(.blue)
+                    .onTapGesture {
+                        restartSnippet(song.snippets[index])
                     }
-                    Spacer()
-                    Button(action: {
-                        editingSnippet = snippet
+                Image(systemName: song.snippets[index].isPlaying ? "pause.circle" : "play.circle")
+                    .resizable()
+                    .frame(width: 20, height: 20)
+                    .foregroundColor(.blue)
+                    .onTapGesture {
+                        toggleSnippetPlayback(song.snippets[index])
+                    }
+                Text("Edit Note")
+                    .onTapGesture {
+                        editingSnippet = song.snippets[index]
                         isShowingNoteEditor = true
-                    }) {
-                        Text("Edit Note")
                     }
-                    .sheet(isPresented: $isShowingNoteEditor, onDismiss: {
-                        editingSnippet = nil
-                    }) {
-                        if let snippet = editingSnippet,
-                           let index = song.snippets.firstIndex(where: { $0.id == snippet.id }) {
-                            NoteEditorView(note: $song.snippets[index].note)
-                        }
-                    }
+            }
+            .sheet(isPresented: $isShowingNoteEditor, onDismiss: {
+                editingSnippet = nil
+            }) {
+                if let snippet = editingSnippet,
+                   let snippetIndex = song.snippets.firstIndex(where: { $0.id == snippet.id }) {
+                    NoteEditorView(note: $song.snippets[snippetIndex].note)
                 }
             }
+        }
+
+
+
 
         
         .onAppear {
@@ -112,7 +130,6 @@ struct MusicPlayerView: View {
             } catch {
                 print("Failed to initialize player: \(error)")
             }
-            song.url.stopAccessingSecurityScopedResource()
         }
         .onDisappear {
             player.stop()
@@ -125,8 +142,24 @@ struct MusicPlayerView: View {
     }
     
     
-    
+    private func restartSnippet(_ snippet: Snippet) {
+        if let player = self.player {
+            player.currentTime = snippet.startTime
+            player.play()
+        } else {
+            do {
+                self.player = try AVAudioPlayer(contentsOf: song.url)
+                self.player.currentTime = snippet.startTime
+                self.player.play()
+            } catch {
+                print("Failed to initialize player: \(error)")
+            }
+        }
+    }
+
+
     private func togglePlayback() {
+        ensurePlayerInitialized()
         isPlaying.toggle()
         
         if isPlaying {
@@ -173,6 +206,16 @@ struct MusicPlayerView: View {
         snippetName = ""
     }
 
+    private func ensurePlayerInitialized() {
+        if player == nil {
+            do {
+                self.player = try AVAudioPlayer(contentsOf: song.url)
+            } catch {
+                print("Failed to initialize player: \(error)")
+            }
+        }
+    }
+
 
     private func formatTimeInterval(_ timeInterval: TimeInterval) -> String {
         let minutes = Int(timeInterval) / 60
@@ -180,19 +223,32 @@ struct MusicPlayerView: View {
         return String(format: "%02d:%02d", minutes, seconds)
     }
     
-    private func toggleSnippetPlayback(_ snippet: Snippet) {
+     private func toggleSnippetPlayback(_ snippet: Snippet) {
+         ensurePlayerInitialized()
         if let index = song.snippets.firstIndex(where: { $0.id == snippet.id }) {
             // Toggle the isPlaying state of the snippet
             song.snippets[index].isPlaying.toggle()
             
             if song.snippets[index].isPlaying {
+                // Initialize the player if necessary
+                if player == nil {
+                    do {
+                        self.player = try AVAudioPlayer(contentsOf: song.url)
+                    } catch {
+                        print("Failed to initialize player: \(error)")
+                        return
+                    }
+                }
+                
                 // Start playing the snippet
                 player.currentTime = snippet.startTime
                 player.play()
                 
                 // Schedule a timer to pause the player when the snippet ends
                 timer = Timer.scheduledTimer(withTimeInterval: snippet.endTime - snippet.startTime, repeats: false) { _ in
-                    self.player.pause()
+                    if let player = self.player {
+                        player.pause()
+                    }
                     // Make sure to update the isPlaying state of the snippet
                     if let snippetIndex = self.song.snippets.firstIndex(where: { $0.id == snippet.id }) {
                         self.song.snippets[snippetIndex].isPlaying = false
@@ -200,12 +256,16 @@ struct MusicPlayerView: View {
                 }
             } else {
                 // Stop playing the snippet
-                player.pause()
+                if let player = self.player {
+                    player.pause()
+                }
                 timer?.invalidate()
                 timer = nil
             }
         }
     }
+
+
 }
 
 struct NoteEditorView: View {

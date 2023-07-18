@@ -4,7 +4,5 @@
 <dict>
 	<key>NSMusicLibraryUsageDescription</key>
 	<string>We access your music library to import songs into the app.</string>
-	<key>NSAppleMusicUsageDescription</key>
-	<string>We access your music library to import songs into the app.</string>
 </dict>
 </plist>
