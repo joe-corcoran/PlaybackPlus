@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CEA11D782A66F48300065C25 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = CEA11D772A66F48300065C25 /* FirebaseAnalytics */; };
+		CEA11D7A2A66F48300065C25 /* FirebaseAnalyticsSwift in Frameworks */ = {isa = PBXBuildFile; productRef = CEA11D792A66F48300065C25 /* FirebaseAnalyticsSwift */; };
+		CEA11D7C2A66F48300065C25 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = CEA11D7B2A66F48300065C25 /* FirebaseAuth */; };
+		CEA11D7E2A66F48300065C25 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = CEA11D7D2A66F48300065C25 /* FirebaseCrashlytics */; };
 		CEB2417C2A5CABB0002D5345 /* PlaybackPlusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEB2417B2A5CABB0002D5345 /* PlaybackPlusApp.swift */; };
 		CEB2417E2A5CABB0002D5345 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEB2417D2A5CABB0002D5345 /* ContentView.swift */; };
 		CEB241802A5CABB1002D5345 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CEB2417F2A5CABB1002D5345 /* Assets.xcassets */; };
@@ -39,7 +43,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CEA11D7A2A66F48300065C25 /* FirebaseAnalyticsSwift in Frameworks */,
+				CEA11D782A66F48300065C25 /* FirebaseAnalytics in Frameworks */,
+				CEA11D7E2A66F48300065C25 /* FirebaseCrashlytics in Frameworks */,
 				CEB241922A5CD7F2002D5345 /* MediaPlayer.framework in Frameworks */,
+				CEA11D7C2A66F48300065C25 /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +120,12 @@
 			dependencies = (
 			);
 			name = PlaybackPlus;
+			packageProductDependencies = (
+				CEA11D772A66F48300065C25 /* FirebaseAnalytics */,
+				CEA11D792A66F48300065C25 /* FirebaseAnalyticsSwift */,
+				CEA11D7B2A66F48300065C25 /* FirebaseAuth */,
+				CEA11D7D2A66F48300065C25 /* FirebaseCrashlytics */,
+			);
 			productName = PlaybackPlus;
 			productReference = CEB241782A5CABB0002D5345 /* PlaybackPlus.app */;
 			productType = "com.apple.product-type.application";
@@ -140,6 +154,9 @@
 				Base,
 			);
 			mainGroup = CEB2416F2A5CABB0002D5345;
+			packageReferences = (
+				CEA11D762A66F48300065C25 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			productRefGroup = CEB241792A5CABB0002D5345 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -377,6 +394,40 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CEA11D762A66F48300065C25 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CEA11D772A66F48300065C25 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEA11D762A66F48300065C25 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		CEA11D792A66F48300065C25 /* FirebaseAnalyticsSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEA11D762A66F48300065C25 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsSwift;
+		};
+		CEA11D7B2A66F48300065C25 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEA11D762A66F48300065C25 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		CEA11D7D2A66F48300065C25 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEA11D762A66F48300065C25 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CEB241702A5CABB0002D5345 /* Project object */;
 }

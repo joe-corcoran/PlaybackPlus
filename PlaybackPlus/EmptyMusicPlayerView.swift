@@ -8,6 +8,7 @@
 import SwiftUI
 import AVFoundation
 import MediaPlayer
+import Firebase
 
 struct Song: Identifiable, Codable {
     let id = UUID()
