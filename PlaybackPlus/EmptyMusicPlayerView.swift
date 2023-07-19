@@ -47,7 +47,6 @@ class MusicPlayerViewModel: ObservableObject {
         isPresented = true
     }
 }
-
 struct EmptyMusicPlayerView: View {
     @State private var fileURL: URL?
     @State private var showDocumentPicker = false
@@ -83,19 +82,31 @@ struct EmptyMusicPlayerView: View {
                     }
                 }
             }
+            .navigationBarTitle("Music Player", displayMode: .inline)
+            .navigationBarItems(trailing: Button("Logout", action: logout))
+            .onAppear {
+                loadSongs()
+            }
         }
         .sheet(isPresented: $playerViewModel.isPresented) {
-                if let selectedSong = playerViewModel.selectedSong {
-                    MusicPlayerView(song: selectedSong, songs: $songs)
-                }
+            if let selectedSong = playerViewModel.selectedSong {
+                MusicPlayerView(song: selectedSong, songs: $songs)
             }
-        .onAppear {
-            loadSongs()
+        }
+    }
+
+    private func logout() {
+        do {
+            try Auth.auth().signOut()
+            // Optional: Perform any additional logout-related actions
+            sessionManager.isLoggedIn = false
+        } catch {
+            print("Error signing out: \(error)")
         }
     }
 
 
-    private func loadSongs() {
+ private func loadSongs() {
         guard let userId = Auth.auth().currentUser?.uid else {
             return
         }
@@ -147,6 +158,7 @@ struct EmptyMusicPlayerView: View {
             }
         }
     }
+
 }
 
 
