@@ -9,14 +9,15 @@ import AVFoundation
 import FirebaseAuth
 import FirebaseFirestore
 import Firebase
+import FirebaseStorage
 import FirebaseAnalytics
 
 struct MusicPlayerView: View {
-    
-   @State var song: Song
+    @State var song: Song
     @Binding var songs: [Song]
+    @State private var selectedSnippet: Snippet? = nil
     @State private var isShowingNoteEditor = false
-     @State private var editingSnippet: Snippet? = nil
+    @State private var editingSnippet: Snippet? = nil
 
     @State private var player: AVAudioPlayer!
     @State private var isPlaying = false
@@ -35,17 +36,19 @@ struct MusicPlayerView: View {
     @State private var isScrubbing = false
     @State private var isShowingSaveSnippetPopup = false
     @State private var snippetName: String = ""
-    
+
+    @State private var selectedImage: UIImage? = nil
+    @State private var isShowingImagePicker: Bool = false
+
     private var firestore: Firestore = Firestore.firestore()
-    
+
     public init(song: Song, songs: Binding<[Song]>) {
-           self._song = State(initialValue: song)
-           self._songs = songs
-       }
-    
+        self._song = State(initialValue: song)
+        self._songs = songs
+    }
 
     @Environment(\.presentationMode) private var presentationMode
-    
+
     var body: some View {
         VStack {
             Text(song.url.lastPathComponent)
@@ -90,14 +93,16 @@ struct MusicPlayerView: View {
                     .padding()
                 }
             }
+            
+   
         }
         
         // Snippets list
-        List(song.snippets.indices, id: \.self) { index in
+        List(song.snippets) { snippet in
             HStack {
                 VStack(alignment: .leading) {
-                    Text("\(formatTimeInterval(song.snippets[index].startTime)) - \(formatTimeInterval(song.snippets[index].endTime))")
-                    Text(song.snippets[index].name)
+                    Text("\(formatTimeInterval(snippet.startTime)) - \(formatTimeInterval(snippet.endTime))")
+                    Text(snippet.name)
                         .font(.caption)
                 }
                 Spacer()
@@ -106,85 +111,204 @@ struct MusicPlayerView: View {
                     .frame(width: 20, height: 20)
                     .foregroundColor(.blue)
                     .onTapGesture {
-                        restartSnippet(song.snippets[index])
+                        restartSnippet(snippet)
                     }
-                Image(systemName: song.snippets[index].isPlaying ? "pause.circle" : "play.circle")
+                Image(systemName: snippet.isPlaying ? "pause.circle" : "play.circle")
                     .resizable()
                     .frame(width: 20, height: 20)
                     .foregroundColor(.blue)
                     .onTapGesture {
-                        toggleSnippetPlayback(song.snippets[index])
+                        toggleSnippetPlayback(snippet)
                     }
                 Text("Edit Note")
                     .onTapGesture {
-                        editingSnippet = song.snippets[index]
+                        editingSnippet = snippet
                         isShowingNoteEditor = true
                     }
-            }
-            .sheet(isPresented: $isShowingNoteEditor, onDismiss: {
-                editingSnippet = nil
-            }) {
-                if let snippet = editingSnippet,
-                   let snippetIndex = song.snippets.firstIndex(where: { $0.id == snippet.id }) {
-                    NoteEditorView(note: $song.snippets[snippetIndex].note)
-                }
+                Image(systemName: "photo")
+                    .resizable()
+                    .frame(width: 20, height: 20)
+                    .foregroundColor(.blue)
+                    .onTapGesture {
+                        selectedSnippet = snippet
+                        isShowingImagePicker = true
+                    }
             }
         }
-
-
-
-
         
-        .onAppear {
-            do {
-                self.player = try AVAudioPlayer(contentsOf: song.url)
-                self.duration = self.player.duration
-                self.endTime = self.player.duration
-            } catch {
-                print("Failed to initialize player: \(error)")
+        .sheet(isPresented: $isShowingNoteEditor, onDismiss: {
+            editingSnippet = nil
+        }) {
+            if let editingSnippet = editingSnippet {
+                NoteEditorView(note: $song.snippets[song.snippets.firstIndex(of: editingSnippet)!].note)
+                    .onDisappear {
+                        saveSongToFirestore()
+                    }
             }
+        }
+        .sheet(isPresented: $isShowingImagePicker) {
+            if let snippet = selectedSnippet {
+                ImagePicker(selectedImage: $selectedImage)
+                    .onAppear {
+                        if let selectedImage = selectedImage {
+                            if let snippetIndex = song.snippets.firstIndex(where: { $0.id == snippet.id }) {
+                                uploadImage(selectedImage) { imageUrl in
+                                    song.snippets[snippetIndex].imageUrl = imageUrl
+                                }
+                            }
+                        }
+                        selectedSnippet = nil
+                    }
+            }
+        }
+        .onAppear {
+            loadAudioPlayer()
         }
         .onDisappear {
-            player.stop()
-            saveSongToFirestore()
-            timer?.invalidate()
-            timer = nil
-            if let index = songs.firstIndex(where: { $0.id == song.id }) {
-                songs[index] = song
-            }
+            cleanupAudioPlayer()
         }
     }
-    
+
+    private func loadAudioPlayer() {
+        do {
+            self.player = try AVAudioPlayer(contentsOf: song.url)
+            self.duration = self.player.duration
+            self.endTime = self.player.duration
+        } catch {
+            print("Failed to initialize player: \(error)")
+        }
+    }
+
     private func saveSongToFirestore() {
         guard let userId = Auth.auth().currentUser?.uid else {
             return
         }
+    }
 
-        let songData: [String: Any] = [
-            "url": song.url.absoluteString,
-            "snippets": song.snippets.map { snippet in
-                return [
-                    "id": snippet.id.uuidString,
-                    "startTime": snippet.startTime,
-                    "endTime": snippet.endTime,
-                    "name": snippet.name,
-                    "isPlaying": snippet.isPlaying,
-                    "note": snippet.note
-                ]
+        
+    private func cleanupAudioPlayer() {
+        player.stop()
+        timer?.invalidate()
+        timer = nil
+        if let index = songs.firstIndex(where: { $0.id == song.id }) {
+            songs[index] = song
+        }
+    }
+
+    private func togglePlayback() {
+        ensurePlayerInitialized()
+        isPlaying.toggle()
+
+        if isPlaying {
+            player.play()
+            timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+                guard !isScrubbing else { return }
+                self.currentTime = self.player.currentTime
+
+                if self.currentTime >= self.endTime {
+                    self.player.currentTime = self.startTime
+                }
             }
-        ]
+        } else {
+            player.pause()
+            timer?.invalidate()
+            timer = nil
+        }
+    }
 
-        let songsCollectionRef = Firestore.firestore().collection("users").document(userId).collection("songs")
-        songsCollectionRef.document(song.id.uuidString).setData(songData) { error in
-            if let error = error {
-                print("Failed to save song to Firestore: \(error)")
-            } else {
-                print("Song saved to Firestore")
+    private func scrub(isScrubbing: Bool) {
+        if isScrubbing {
+            self.isScrubbing = true
+            player.currentTime = currentTime
+            player.pause()
+        } else {
+            self.isScrubbing = false
+            player.currentTime = currentTime
+            if isPlaying {
+                player.play()
             }
         }
     }
 
-    
+    private func saveSnippet() {
+        guard startTime < endTime else { return }
+
+        if let image = selectedImage {
+            uploadImage(image) { imageUrl in
+                let snippet = Snippet(startTime: startTime, endTime: endTime, name: snippetName, note: "", imageUrl: imageUrl)
+                song.snippets.append(snippet)
+
+                startTime = 0
+                endTime = duration
+                snippetName = ""
+                selectedImage = nil
+                
+                // Save the song to Firestore
+                saveSongToFirestore()
+            }
+        } else {
+            let snippet = Snippet(startTime: startTime, endTime: endTime, name: snippetName)
+            song.snippets.append(snippet)
+
+            startTime = 0
+            endTime = duration
+            snippetName = ""
+            
+            // Save the song to Firestore
+            saveSongToFirestore()
+        }
+    }
+
+    private func uploadImage(_ image: UIImage, completion: @escaping (String) -> Void) {
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            print("Failed to convert image to data")
+            return
+        }
+
+        let storageRef = Storage.storage().reference()
+        let imageName = UUID().uuidString
+        let imageRef = storageRef.child("images/\(imageName).jpg")
+
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+
+        imageRef.putData(imageData, metadata: metadata) { _, error in
+            if let error = error {
+                print("Failed to upload image: \(error)")
+                return
+            }
+
+            imageRef.downloadURL { url, error in
+                if let error = error {
+                    print("Failed to get download URL: \(error)")
+                    return
+                }
+
+                if let downloadURL = url?.absoluteString {
+                    completion(downloadURL)
+                }
+            }
+        }
+    }
+
+    private func ensurePlayerInitialized() {
+        if player == nil {
+            do {
+                self.player = try AVAudioPlayer(contentsOf: song.url)
+            } catch {
+                print("Failed to initialize player: \(error)")
+            }
+        }
+    }
+
+    private func handleImageSelection(_ image: UIImage, for snippet: Snippet) {
+        if let snippetIndex = song.snippets.firstIndex(where: { $0.id == snippet.id }) {
+            uploadImage(image) { imageUrl in
+                song.snippets[snippetIndex].imageUrl = imageUrl
+            }
+        }
+    }
+
     private func restartSnippet(_ snippet: Snippet) {
         if let player = self.player {
             player.currentTime = snippet.startTime
@@ -200,74 +324,8 @@ struct MusicPlayerView: View {
         }
     }
 
-
-    private func togglePlayback() {
+    private func toggleSnippetPlayback(_ snippet: Snippet) {
         ensurePlayerInitialized()
-        isPlaying.toggle()
-        
-        if isPlaying {
-            player.play()
-            timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-                guard !isScrubbing else { return }
-                self.currentTime = self.player.currentTime
-                
-                if self.currentTime >= self.endTime {
-                    self.player.currentTime = self.startTime
-                }
-            }
-        } else {
-            player.pause()
-            timer?.invalidate()
-            timer = nil
-        }
-    }
-    
-    
-    
-    private func scrub(isScrubbing: Bool) {
-        if isScrubbing {
-            self.isScrubbing = true
-            player.currentTime = currentTime
-            player.pause()
-        } else {
-            self.isScrubbing = false
-            player.currentTime = currentTime
-            if isPlaying {
-                player.play()
-            }
-        }
-    }
-    
-    private func saveSnippet() {
-        guard startTime < endTime else { return }
-        
-        let snippet = Snippet(startTime: startTime, endTime: endTime, name: snippetName, note: "")
-        song.snippets.append(snippet)
-        
-        startTime = 0
-        endTime = duration
-        snippetName = ""
-    }
-
-    private func ensurePlayerInitialized() {
-        if player == nil {
-            do {
-                self.player = try AVAudioPlayer(contentsOf: song.url)
-            } catch {
-                print("Failed to initialize player: \(error)")
-            }
-        }
-    }
-
-
-    private func formatTimeInterval(_ timeInterval: TimeInterval) -> String {
-        let minutes = Int(timeInterval) / 60
-        let seconds = Int(timeInterval) % 60
-        return String(format: "%02d:%02d", minutes, seconds)
-    }
-    
-     private func toggleSnippetPlayback(_ snippet: Snippet) {
-         ensurePlayerInitialized()
         if let index = song.snippets.firstIndex(where: { $0.id == snippet.id }) {
             // Toggle the isPlaying state of the snippet
             song.snippets[index].isPlaying.toggle()
@@ -308,8 +366,13 @@ struct MusicPlayerView: View {
         }
     }
 
-
+    private func formatTimeInterval(_ timeInterval: TimeInterval) -> String {
+        let minutes = Int(timeInterval) / 60
+        let seconds = Int(timeInterval) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
 }
+
 
 struct NoteEditorView: View {
     @Binding var note: String

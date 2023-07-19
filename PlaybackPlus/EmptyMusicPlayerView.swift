@@ -19,22 +19,24 @@ struct Song: Identifiable, Codable {
     var snippets: [Snippet]
 }
 
-struct Snippet: Identifiable, Codable {
+struct Snippet: Identifiable, Codable, Equatable {
     let id: UUID
     let startTime: TimeInterval
     let endTime: TimeInterval
     let name: String
     var isPlaying: Bool
     var note: String
+    var imageUrl: String  // Add imageUrl property
 
     // Standard initializer
-    init(id: UUID = UUID(), startTime: TimeInterval, endTime: TimeInterval, name: String, isPlaying: Bool = false, note: String = "") {
+    init(id: UUID = UUID(), startTime: TimeInterval, endTime: TimeInterval, name: String, isPlaying: Bool = false, note: String = "", imageUrl: String = "") {
         self.id = id
         self.startTime = startTime
         self.endTime = endTime
         self.name = name
         self.isPlaying = isPlaying
         self.note = note
+        self.imageUrl = imageUrl  // Initialize imageUrl
     }
 }
 
@@ -88,10 +90,8 @@ struct EmptyMusicPlayerView: View {
                 loadSongs()
             }
         }
-        .sheet(isPresented: $playerViewModel.isPresented) {
-            if let selectedSong = playerViewModel.selectedSong {
-                MusicPlayerView(song: selectedSong, songs: $songs)
-            }
+        .sheet(item: $playerViewModel.selectedSong) { song in
+            MusicPlayerView(song: song, songs: $songs)
         }
     }
 
@@ -105,8 +105,7 @@ struct EmptyMusicPlayerView: View {
         }
     }
 
-
- private func loadSongs() {
+    private func loadSongs() {
         guard let userId = Auth.auth().currentUser?.uid else {
             return
         }
@@ -122,45 +121,47 @@ struct EmptyMusicPlayerView: View {
                 return
             }
 
-            songs = documents.compactMap { document in
-                guard
-                    let urlString = document.data()["url"] as? String,
-                    let url = URL(string: urlString),
-                    let snippetsData = document.data()["snippets"] as? [[String: Any]]
-                else {
-                    return nil
-                }
-
-                let snippets = snippetsData.compactMap { snippetDict -> Snippet? in
+            DispatchQueue.main.async { // Update songs array on the main queue
+                songs = documents.compactMap { document in
                     guard
-                        let idString = snippetDict["id"] as? String,
-                        let id = UUID(uuidString: idString),
-                        let startTime = snippetDict["startTime"] as? TimeInterval,
-                        let endTime = snippetDict["endTime"] as? TimeInterval,
-                        let name = snippetDict["name"] as? String,
-                        let isPlaying = snippetDict["isPlaying"] as? Bool,
-                        let note = snippetDict["note"] as? String
+                        let urlString = document.data()["url"] as? String,
+                        let url = URL(string: urlString),
+                        let snippetsData = document.data()["snippets"] as? [[String: Any]]
                     else {
                         return nil
                     }
 
-                    return Snippet(
-                        id: id,
-                        startTime: startTime,
-                        endTime: endTime,
-                        name: name,
-                        isPlaying: isPlaying,
-                        note: note
-                    )
-                }
+                    let snippets = snippetsData.compactMap { snippetDict -> Snippet? in
+                        guard
+                            let idString = snippetDict["id"] as? String,
+                            let id = UUID(uuidString: idString),
+                            let startTime = snippetDict["startTime"] as? TimeInterval,
+                            let endTime = snippetDict["endTime"] as? TimeInterval,
+                            let name = snippetDict["name"] as? String,
+                            let isPlaying = snippetDict["isPlaying"] as? Bool,
+                            let note = snippetDict["note"] as? String,
+                            let imageUrl = snippetDict["imageUrl"] as? String
+                        else {
+                            return nil
+                        }
 
-                return Song(url: url, snippets: snippets)
+                        return Snippet(
+                            id: id,
+                            startTime: startTime,
+                            endTime: endTime,
+                            name: name,
+                            isPlaying: isPlaying,
+                            note: note,
+                            imageUrl: imageUrl
+                        )
+                    }
+
+                    return Song(url: url, snippets: snippets)
+                }
             }
         }
     }
-
 }
-
 
 struct EmptyMusicPlayerView_Previews: PreviewProvider {
     static var previews: some View {
