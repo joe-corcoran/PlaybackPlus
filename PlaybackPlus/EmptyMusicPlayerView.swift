@@ -14,10 +14,10 @@ import FirebaseAuth
 import FirebaseAnalytics
 
 struct Song: Identifiable, Codable {
-    let id = UUID()
-    let documentID: String  // Add this line
+    var id = UUID()
+    var documentID: String? // Change this line to make it optional
     var url: URL
-    var name: String   // Add this line
+    var name: String
     var snippets: [Snippet]
 }
 
@@ -115,18 +115,23 @@ struct EmptyMusicPlayerView: View {
             guard let userId = Auth.auth().currentUser?.uid else {
                 return
             }
-            let songDocumentRef = firestore.collection("users").document(userId).collection("songs").document(song.documentID)
-            songDocumentRef.delete() { error in
-                if let error = error {
-                    print("Failed to delete song: \(error)")
-                    return
+            if let songDocumentID = song.documentID { // Optional binding to safely unwrap the documentID
+                let songDocumentRef = firestore.collection("users").document(userId).collection("songs").document(songDocumentID)
+                songDocumentRef.delete() { error in
+                    if let error = error {
+                        print("Failed to delete song: \(error)")
+                        return
+                    }
+                    
+                    // Then remove it from the local array
+                    songs.remove(at: index)
                 }
-                
-                // Then remove it from the local array
-                songs.remove(at: index)
+            } else {
+                print("Song documentID is nil")
             }
         }
     }
+
 
     private func logout() {
         do {
@@ -159,7 +164,6 @@ struct EmptyMusicPlayerView: View {
                     guard
                         let urlString = document.data()["url"] as? String,
                         let url = URL(string: urlString),
-                        let name = document.data()["name"] as? String,  // Add this line
                         let snippetsData = document.data()["snippets"] as? [[String: Any]]
                     else {
                         return nil
@@ -190,11 +194,16 @@ struct EmptyMusicPlayerView: View {
                         )
                     }
 
-                    return Song(documentID: document.documentID, url: url, name: name, snippets: snippets)  // use documentID
+                    let documentID = document.documentID
+                    let name = document.data()["name"] as? String ?? "" // Get the song name from Firestore
+                    let song = Song(documentID: documentID, url: url, name: name, snippets: snippets)
+
+                    return song
                 }
             }
         }
     }
+
 }
 
 struct EmptyMusicPlayerView_Previews: PreviewProvider {

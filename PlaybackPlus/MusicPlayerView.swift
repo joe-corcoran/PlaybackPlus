@@ -49,125 +49,151 @@ struct MusicPlayerView: View {
     @Environment(\.presentationMode) private var presentationMode
     
     var body: some View {
-           VStack {
-               HStack {
-                   if isRenaming {
-                       TextField("New name", text: $song.name, onCommit: {
-                           isRenaming = false
-                           // Optionally, save the new song name to Firestore here
-                       })
-                       .textFieldStyle(RoundedBorderTextFieldStyle())
-                   } else {
-                       Text(song.name)
-                       Spacer()
-                       Button("Rename") {
-                           isRenaming = true
-                       }
-                   }
-               }
-            Button(isPlaying ? "Pause" : "Play", action: togglePlayback)
-            Text(String(format: "%02d:%02d", Int(currentTime)/60, Int(currentTime)%60))
-            Slider(value: $currentTime, in: 0...duration, onEditingChanged: scrub)
+        VStack {
+            HStack {
+                if isRenaming {
+                    TextField("New name", text: $song.name, onCommit: {
+                        isRenaming = false
+                        saveSongToFirestore() // Save the updated song name to Firestore
+                    })
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                } else {
+                    Text(song.name)
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .padding(.bottom)
+                    Spacer()
+                    Button("Rename") {
+                        isRenaming = true
+                    }
+                }
+            }
+            VStack {
+                HStack {
+                    Spacer()
+                    Text(String(format: "%02d:%02d", Int(currentTime)/60, Int(currentTime)%60))
+                    Spacer()
+                }
+                Button(action: togglePlayback) {
+                    Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .resizable()
+                        .frame(width: 50, height: 50)
+                        .padding(.bottom)
+                }
+                Slider(value: $currentTime, in: 0...duration, onEditingChanged: scrub)
+                    .padding()
+            }
             
             // Start and end sliders
-            HStack {
-                Text(String(format: "%02d:%02d", Int(startTime)/60, Int(startTime)%60))
-                Slider(value: $startTime, in: 0...duration) { editing in
-                    if editing {
-                        isScrubbing = true
-                    } else {
-                        isScrubbing = false
-                    }
-                    if startTime >= endTime {
-                        endTime = startTime + 1
+            VStack {
+                Text("Start Time")
+                HStack {
+                    Text(String(format: "%02d:%02d", Int(startTime)/60, Int(startTime)%60))
+                    Slider(value: $startTime, in: 0...duration) { editing in
+                        if editing {
+                            isScrubbing = true
+                        } else {
+                            isScrubbing = false
+                        }
+                        if startTime >= endTime {
+                            endTime = startTime + 1
+                        }
                     }
                 }
-                Text(String(format: "%02d:%02d", Int(endTime)/60, Int(endTime)%60))
-                Slider(value: $endTime, in: 0...duration) { _ in
-                    if endTime <= startTime {
-                        startTime = endTime - 1
+                Text("End Time")
+                HStack {
+                    Text(String(format: "%02d:%02d", Int(endTime)/60, Int(endTime)%60))
+                    Slider(value: $endTime, in: 0...duration) { _ in
+                        if endTime <= startTime {
+                            startTime = endTime - 1
+                        }
                     }
                 }
             }
-            
-            // Save button
-            Button("Save Snippet", action: {
-                isShowingSaveSnippetPopup = true
-            })
-            .padding()
-            .sheet(isPresented: $isShowingSaveSnippetPopup) {
-                VStack {
-                    TextField("Snippet Name", text: $snippetName)
-                        .padding()
-                    Button("Save", action: {
-                        saveSnippet()
-                        isShowingSaveSnippetPopup = false
+                    
+                    
+                    // Save button
+                    Button("Save Snippet", action: {
+                        isShowingSaveSnippetPopup = true
                     })
                     .padding()
-                }
-            }
-        }
-        // Snippets list
-        List {
-            ForEach(song.snippets.indices, id: \.self) { index in
-                let snippet = song.snippets[index]
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text("\(formatTimeInterval(snippet.startTime)) - \(formatTimeInterval(snippet.endTime))")
-                        Text(snippet.name)
-                            .font(.caption)
+                    .sheet(isPresented: $isShowingSaveSnippetPopup) {
+                        VStack {
+                            TextField("Snippet Name", text: $snippetName)
+                                .padding()
+                            Button("Save", action: {
+                                saveSnippet()
+                                isShowingSaveSnippetPopup = false
+                            })
+                            .padding()
+                        }
                     }
-                    Spacer()
-                    Image(systemName: "backward.fill")
-                        .resizable()
-                        .frame(width: 20, height: 20)
-                        .foregroundColor(.blue)
-                        .onTapGesture {
-                            restartSnippet(snippet)
+                }
+                
+                // Snippets list
+                List {
+                    ForEach(song.snippets.indices, id: \.self) { index in
+                        let snippet = song.snippets[index]
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text("\(formatTimeInterval(snippet.startTime)) - \(formatTimeInterval(snippet.endTime))")
+                                Text(snippet.name)
+                                    .font(.caption)
+                                Text("Duration: \(formatTimeInterval(snippet.endTime - snippet.startTime))")
+                                    .font(.caption)
+                            }
+                            Spacer()
+                            Image(systemName: "backward.fill")
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                                .foregroundColor(.blue)
+                                .onTapGesture {
+                                    restartSnippet(snippet)
+                                }
+                            Image(systemName: snippet.isPlaying ? "pause.circle" : "play.circle")
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                                .foregroundColor(.blue)
+                                .onTapGesture {
+                                    toggleSnippetPlayback(snippet)
+                                }
+                            Text("Edit Note")
+                                .onTapGesture {
+                                    editingSnippet = snippet
+                                    isShowingNoteEditor = true
+                                }
+                            Image(systemName: "photo")
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                                .foregroundColor(.blue)
+                                .onTapGesture {
+                                    selectedSnippet = snippet
+                                    isShowingImagePicker = true
+                                }
                         }
-                    Image(systemName: snippet.isPlaying ? "pause.circle" : "play.circle")
-                        .resizable()
-                        .frame(width: 20, height: 20)
-                        .foregroundColor(.blue)
-                        .onTapGesture {
-                            toggleSnippetPlayback(snippet)
-                        }
-                    Text("Edit Note")
                         .onTapGesture {
                             editingSnippet = snippet
                             isShowingNoteEditor = true
                         }
-                    Image(systemName: "photo")
-                        .resizable()
-                        .frame(width: 20, height: 20)
-                        .foregroundColor(.blue)
-                        .onTapGesture {
-                            selectedSnippet = snippet
-                            isShowingImagePicker = true
-                        }
-                }
-                .onTapGesture {
-                    editingSnippet = snippet
-                    isShowingNoteEditor = true
-                }
-                .sheet(item: $editingSnippet) { snippet in
-                    if let index = song.snippets.firstIndex(where: { $0.id == snippet.id }) {
-                        NoteEditorView(note: $song.snippets[index].note, selectedImage: $selectedImage) {
-                            saveSongToFirestore()
-                            editingSnippet = nil
+                        .sheet(item: $editingSnippet) { snippet in
+                            if let index = song.snippets.firstIndex(where: { $0.id == snippet.id }) {
+                                NoteEditorView(note: $song.snippets[index].note, selectedImage: $selectedImage) {
+                                    saveSongToFirestore()
+                                    editingSnippet = nil
+                                }
+                            }
                         }
                     }
+                    .onDelete(perform: deleteSnippets)
+                }
+                .onAppear {
+                    loadAudioPlayer()
+                }
+                .onDisappear {
+                    cleanupAudioPlayer()
                 }
             }
-            .onDelete(perform: deleteSnippets)
-        }
-        .onAppear {
-            loadAudioPlayer()
-        }
-        .onDisappear {
-            cleanupAudioPlayer()
-        }
-    }
+        
     
     private func loadAudioPlayer() {
         do {
@@ -179,31 +205,73 @@ struct MusicPlayerView: View {
         }
     }
     
-    private func saveSongToFirestore() {
+  private func saveSongToFirestore() {
         guard let userId = Auth.auth().currentUser?.uid else {
             return
         }
+
+        let songsCollectionRef = firestore.collection("users").document(userId).collection("songs")
+        let songDocumentRef: DocumentReference
+
+        if let documentID = song.documentID {
+            songDocumentRef = songsCollectionRef.document(documentID)
+        } else {
+            songDocumentRef = songsCollectionRef.document()
+            song.documentID = songDocumentRef.documentID
+        }
+
+        let data: [String: Any] = [
+            "url": song.url.absoluteString,
+            "name": song.name,
+            "snippets": song.snippets.map { snippet in
+                // Convert snippet to dictionary
+                return [
+                    "id": snippet.id.uuidString,
+                    "startTime": snippet.startTime,
+                    "endTime": snippet.endTime,
+                    "name": snippet.name,
+                    "isPlaying": snippet.isPlaying,
+                    "note": snippet.note,
+                    "imageUrl": snippet.imageUrl
+                ]
+            }
+        ]
+
+        songDocumentRef.setData(data) { error in
+            if let error = error {
+                print("Failed to save song to Firestore: \(error)")
+            } else {
+                print("Song saved to Firestore")
+            }
+        }
     }
-    
+
     private func deleteSnippets(at offsets: IndexSet) {
         offsets.forEach { index in
             // Delete the snippet from Firestore
-            guard let userId = Auth.auth().currentUser?.uid else {
+            guard let userId = Auth.auth().currentUser?.uid, let songDocumentID = song.documentID else {
                 return
             }
-            let snippetDocumentRef = firestore.collection("users").document(userId).collection("songs").document(song.documentID).collection("snippets").document(song.snippets[index].id.uuidString)
+
+            let snippetID = song.snippets[index].id
+            let snippetDocumentRef = firestore.collection("users").document(userId).collection("songs").document(songDocumentID).collection("snippets").document(snippetID.uuidString)
+
             snippetDocumentRef.delete() { error in
                 if let error = error {
                     print("Failed to delete snippet: \(error)")
                     return
                 }
-                
+
                 // Then remove it from the local array
                 song.snippets.remove(at: index)
             }
         }
     }
-    
+
+
+
+
+
     private func cleanupAudioPlayer() {
         player.stop()
         timer?.invalidate()
