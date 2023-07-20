@@ -94,6 +94,11 @@ struct EmptyMusicPlayerView: View {
             MusicPlayerView(song: song, songs: $songs)
         }
     }
+    
+    private func deleteSongs(at offsets: IndexSet) {
+        songs.remove(atOffsets: offsets)
+    }
+
 
     private func logout() {
         do {
@@ -104,7 +109,9 @@ struct EmptyMusicPlayerView: View {
             print("Error signing out: \(error)")
         }
     }
+    
 
+    
     private func loadSongs() {
         guard let userId = Auth.auth().currentUser?.uid else {
             return
@@ -162,6 +169,8 @@ struct EmptyMusicPlayerView: View {
         }
     }
 }
+
+
 
 struct EmptyMusicPlayerView_Previews: PreviewProvider {
     static var previews: some View {

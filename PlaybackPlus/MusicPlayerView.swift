@@ -93,13 +93,13 @@ struct MusicPlayerView: View {
                     .padding()
                 }
             }
-            
-   
         }
         
         // Snippets list
-        List(song.snippets) { snippet in
-            HStack {
+        List(song.snippets.indices, id: \.self) { index in
+                  let snippet = song.snippets[index]
+                  HStack {
+
                 VStack(alignment: .leading) {
                     Text("\(formatTimeInterval(snippet.startTime)) - \(formatTimeInterval(snippet.endTime))")
                     Text(snippet.name)
@@ -134,33 +134,19 @@ struct MusicPlayerView: View {
                         isShowingImagePicker = true
                     }
             }
-        }
-        
-        .sheet(isPresented: $isShowingNoteEditor, onDismiss: {
-            editingSnippet = nil
-        }) {
-            if let editingSnippet = editingSnippet {
-                NoteEditorView(note: $song.snippets[song.snippets.firstIndex(of: editingSnippet)!].note)
-                    .onDisappear {
-                        saveSongToFirestore()
-                    }
-            }
-        }
-        .sheet(isPresented: $isShowingImagePicker) {
-            if let snippet = selectedSnippet {
-                ImagePicker(selectedImage: $selectedImage)
-                    .onAppear {
-                        if let selectedImage = selectedImage {
-                            if let snippetIndex = song.snippets.firstIndex(where: { $0.id == snippet.id }) {
-                                uploadImage(selectedImage) { imageUrl in
-                                    song.snippets[snippetIndex].imageUrl = imageUrl
-                                }
-                            }
-                        }
-                        selectedSnippet = nil
-                    }
-            }
-        }
+                  .onTapGesture {
+                                 editingSnippet = snippet
+                                 isShowingNoteEditor = true
+                             }
+                             .sheet(item: $editingSnippet) { snippet in
+                                 if let index = song.snippets.firstIndex(where: { $0.id == snippet.id }) {
+                                     NoteEditorView(note: $song.snippets[index].note, selectedImage: $selectedImage) {
+                                         saveSongToFirestore()
+                                         editingSnippet = nil
+                                     }
+                                 }
+                             }
+                         }
         .onAppear {
             loadAudioPlayer()
         }
@@ -185,7 +171,6 @@ struct MusicPlayerView: View {
         }
     }
 
-        
     private func cleanupAudioPlayer() {
         player.stop()
         timer?.invalidate()
@@ -371,24 +356,40 @@ struct MusicPlayerView: View {
         let seconds = Int(timeInterval) % 60
         return String(format: "%02d:%02d", minutes, seconds)
     }
-}
+    
+    private func deleteSnippets(at offsets: IndexSet) {
+          song.snippets.remove(atOffsets: offsets)
+      }
+  }
+
 
 
 struct NoteEditorView: View {
     @Binding var note: String
-    @Environment(\.presentationMode) var presentationMode
+    @Binding var selectedImage: UIImage?
+    var onDismiss: () -> Void
 
     var body: some View {
         VStack {
+            HStack {
+                Spacer()
+                Button(action: {
+                    // Handle image selection here
+                }) {
+                    Image(systemName: "photo")
+                        .resizable()
+                        .frame(width: 20, height: 20)
+                }
+                .padding(.trailing)
+            }
             TextEditor(text: $note)
-            Button("Done", action: {
-                self.presentationMode.wrappedValue.dismiss()
-            })
-            .padding()
+            Button("Done", action: onDismiss)
+                .padding()
         }
         .padding()
     }
 }
+
 
 /*struct MusicPlayerView_Previews: PreviewProvider {
     static var previews: some View {
