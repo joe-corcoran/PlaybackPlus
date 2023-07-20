@@ -15,6 +15,7 @@ import FirebaseAnalytics
 
 struct Song: Identifiable, Codable {
     let id = UUID()
+    let documentID: String  // Add this line
     var url: URL
     var snippets: [Snippet]
 }
@@ -49,6 +50,7 @@ class MusicPlayerViewModel: ObservableObject {
         isPresented = true
     }
 }
+
 struct EmptyMusicPlayerView: View {
     @State private var fileURL: URL?
     @State private var showDocumentPicker = false
@@ -70,35 +72,53 @@ struct EmptyMusicPlayerView: View {
                 }
                 .onChange(of: fileURL) { newValue in
                     if let newValue = newValue {
-                        let newSong = Song(url: newValue, snippets: [])
+                        let newSong = Song(documentID: UUID().uuidString, url: newValue, snippets: [])
                         songs.append(newSong)
                         playerViewModel.selectSong(newSong)
                     }
                 }
-
-                List(songs) { song in
-                    Button(action: {
-                        playerViewModel.selectSong(song)
-                    }) {
-                        Text(song.url.lastPathComponent)
+                
+                List {
+                    ForEach(songs) { song in
+                        Button(action: {
+                            playerViewModel.selectSong(song)
+                        }) {
+                            Text(song.url.lastPathComponent)
+                        }
                     }
+                    .onDelete(perform: deleteSongs)
+                }
+                .navigationBarTitle("Music Player", displayMode: .inline)
+                .navigationBarItems(trailing: Button("Logout", action: logout))
+                .onAppear {
+                    loadSongs()
                 }
             }
-            .navigationBarTitle("Music Player", displayMode: .inline)
-            .navigationBarItems(trailing: Button("Logout", action: logout))
-            .onAppear {
-                loadSongs()
+            .sheet(item: $playerViewModel.selectedSong) { song in
+                MusicPlayerView(song: song, songs: $songs)
             }
-        }
-        .sheet(item: $playerViewModel.selectedSong) { song in
-            MusicPlayerView(song: song, songs: $songs)
         }
     }
     
     private func deleteSongs(at offsets: IndexSet) {
-        songs.remove(atOffsets: offsets)
+        offsets.forEach { index in
+            let song = songs[index]
+            // Delete the song from Firestore
+            guard let userId = Auth.auth().currentUser?.uid else {
+                return
+            }
+            let songDocumentRef = firestore.collection("users").document(userId).collection("songs").document(song.documentID)
+            songDocumentRef.delete() { error in
+                if let error = error {
+                    print("Failed to delete song: \(error)")
+                    return
+                }
+                
+                // Then remove it from the local array
+                songs.remove(at: index)
+            }
+        }
     }
-
 
     private func logout() {
         do {
@@ -109,9 +129,7 @@ struct EmptyMusicPlayerView: View {
             print("Error signing out: \(error)")
         }
     }
-    
 
-    
     private func loadSongs() {
         guard let userId = Auth.auth().currentUser?.uid else {
             return
@@ -163,21 +181,18 @@ struct EmptyMusicPlayerView: View {
                         )
                     }
 
-                    return Song(url: url, snippets: snippets)
+                    return Song(documentID: document.documentID, url: url, snippets: snippets) // use documentID
                 }
             }
         }
     }
 }
 
-
-
 struct EmptyMusicPlayerView_Previews: PreviewProvider {
     static var previews: some View {
         EmptyMusicPlayerView()
     }
 }
-
 //test
 
 //test
