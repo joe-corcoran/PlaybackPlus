@@ -35,7 +35,7 @@ struct MusicPlayerView: View {
     @State private var isScrubbing = false
     @State private var isShowingSaveSnippetPopup = false
     @State private var snippetName: String = ""
-    
+    @State private var isRenaming = false
     @State private var selectedImage: UIImage? = nil
     @State private var isShowingImagePicker: Bool = false
     
@@ -49,8 +49,22 @@ struct MusicPlayerView: View {
     @Environment(\.presentationMode) private var presentationMode
     
     var body: some View {
-        VStack {
-            Text(song.url.lastPathComponent)
+           VStack {
+               HStack {
+                   if isRenaming {
+                       TextField("New name", text: $song.name, onCommit: {
+                           isRenaming = false
+                           // Optionally, save the new song name to Firestore here
+                       })
+                       .textFieldStyle(RoundedBorderTextFieldStyle())
+                   } else {
+                       Text(song.name)
+                       Spacer()
+                       Button("Rename") {
+                           isRenaming = true
+                       }
+                   }
+               }
             Button(isPlaying ? "Pause" : "Play", action: togglePlayback)
             Text(String(format: "%02d:%02d", Int(currentTime)/60, Int(currentTime)%60))
             Slider(value: $currentTime, in: 0...duration, onEditingChanged: scrub)

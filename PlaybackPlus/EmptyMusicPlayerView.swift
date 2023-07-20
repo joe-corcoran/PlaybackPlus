@@ -17,6 +17,7 @@ struct Song: Identifiable, Codable {
     let id = UUID()
     let documentID: String  // Add this line
     var url: URL
+    var name: String   // Add this line
     var snippets: [Snippet]
 }
 
@@ -64,15 +65,22 @@ struct EmptyMusicPlayerView: View {
         NavigationView {
             VStack {
                 Text("No song loaded")
+                    .font(.title)
+                    .fontWeight(.semibold)
+                    .padding()
                 Button("Load song") {
                     showDocumentPicker = true
                 }
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
                 .sheet(isPresented: $showDocumentPicker) {
                     DocumentPicker(fileURL: $fileURL, supportedTypes: [.mp3, .wav])
                 }
                 .onChange(of: fileURL) { newValue in
                     if let newValue = newValue {
-                        let newSong = Song(documentID: UUID().uuidString, url: newValue, snippets: [])
+                        let newSong = Song(documentID: "", url: newValue, name: newValue.lastPathComponent, snippets: [])
                         songs.append(newSong)
                         playerViewModel.selectSong(newSong)
                     }
@@ -83,7 +91,7 @@ struct EmptyMusicPlayerView: View {
                         Button(action: {
                             playerViewModel.selectSong(song)
                         }) {
-                            Text(song.url.lastPathComponent)
+                            Text(song.name) // Changed to song.name
                         }
                     }
                     .onDelete(perform: deleteSongs)
@@ -151,6 +159,7 @@ struct EmptyMusicPlayerView: View {
                     guard
                         let urlString = document.data()["url"] as? String,
                         let url = URL(string: urlString),
+                        let name = document.data()["name"] as? String,  // Add this line
                         let snippetsData = document.data()["snippets"] as? [[String: Any]]
                     else {
                         return nil
@@ -181,7 +190,7 @@ struct EmptyMusicPlayerView: View {
                         )
                     }
 
-                    return Song(documentID: document.documentID, url: url, snippets: snippets) // use documentID
+                    return Song(documentID: document.documentID, url: url, name: name, snippets: snippets)  // use documentID
                 }
             }
         }
