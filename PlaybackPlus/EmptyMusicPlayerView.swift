@@ -76,7 +76,6 @@ class MusicPlayerViewModel: ObservableObject {
         isPresented = true
     }
 }
-
 struct EmptyMusicPlayerView: View {
     @State private var fileURL: URL?
     @State private var showDocumentPicker = false
@@ -97,7 +96,7 @@ struct EmptyMusicPlayerView: View {
                     showDocumentPicker = true
                 }
                 .padding()
-                .background(Color.blue)
+                .background(AppColors.primaryColor)
                 .foregroundColor(.white)
                 .cornerRadius(10)
                 .sheet(isPresented: $showDocumentPicker) {
@@ -116,13 +115,13 @@ struct EmptyMusicPlayerView: View {
                         Button(action: {
                             playerViewModel.selectSong(song)
                         }) {
-                            Text(song.name)  .foregroundColor(AppColors.primaryColor)
-                            // Changed to .fill(Color(hex: 0xFF0000)) song.name
+                            Text(song.name)
+                                .foregroundColor(AppColors.primaryColor)
                         }
                     }
                     .onDelete(perform: deleteSongs)
                 }
-                .navigationBarTitle("Music Player", displayMode: .inline)
+                .navigationBarTitle("Playback Plus", displayMode: .inline)
                 .navigationBarItems(trailing: Button("Logout", action: logout))
                 .onAppear {
                     loadSongs()
@@ -132,7 +131,10 @@ struct EmptyMusicPlayerView: View {
                 MusicPlayerView(song: song, songs: $songs)
             }
         }
+        .background(AppColors.backgroundColor)
+        .accentColor(AppColors.accentColor)
     }
+
     
     private func deleteSongs(at offsets: IndexSet) {
         offsets.forEach { index in
