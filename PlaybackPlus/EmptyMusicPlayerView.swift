@@ -13,6 +13,31 @@ import FirebaseFirestore
 import FirebaseAuth
 import FirebaseAnalytics
 
+
+struct AppColors {
+    static let primaryColor = Color(hex: 0x2F80ED)
+    static let secondaryColor = Color(hex: 0x56CCF2)
+    static let accentColor = Color(hex: 0xFF9F1C)
+    static let backgroundColor = Color(hex: 0x0C0A3E)
+}
+
+
+extension Color {
+    init(hex: UInt, alpha: Double = 1.0) {
+        let red = Double((hex & 0xFF0000) >> 16) / 255.0
+        let green = Double((hex & 0x00FF00) >> 8) / 255.0
+        let blue = Double(hex & 0x0000FF) / 255.0
+
+        self.init(
+            .sRGB,
+            red: red,
+            green: green,
+            blue: blue,
+            opacity: alpha
+        )
+    }
+}
+
 struct Song: Identifiable, Codable {
     var id = UUID()
     var documentID: String? // Change this line to make it optional
@@ -91,7 +116,8 @@ struct EmptyMusicPlayerView: View {
                         Button(action: {
                             playerViewModel.selectSong(song)
                         }) {
-                            Text(song.name) // Changed to song.name
+                            Text(song.name)  .foregroundColor(AppColors.primaryColor)
+                            // Changed to .fill(Color(hex: 0xFF0000)) song.name
                         }
                     }
                     .onDelete(perform: deleteSongs)

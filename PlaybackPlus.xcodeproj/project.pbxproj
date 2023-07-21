@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		CE0C9C102A6866B000089D11 /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE0C9C0F2A6866B000089D11 /* ImagePicker.swift */; };
 		CE0C9C122A686A8600089D11 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = CE0C9C112A686A8600089D11 /* FirebaseStorage */; };
+		CE0C9C162A6A015B00089D11 /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE0C9C152A6A015B00089D11 /* Colors.swift */; };
 		CEA11D782A66F48300065C25 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = CEA11D772A66F48300065C25 /* FirebaseAnalytics */; };
 		CEA11D7A2A66F48300065C25 /* FirebaseAnalyticsSwift in Frameworks */ = {isa = PBXBuildFile; productRef = CEA11D792A66F48300065C25 /* FirebaseAnalyticsSwift */; };
 		CEA11D7C2A66F48300065C25 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = CEA11D7B2A66F48300065C25 /* FirebaseAuth */; };
@@ -31,6 +32,7 @@
 
 /* Begin PBXFileReference section */
 		CE0C9C0F2A6866B000089D11 /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
+		CE0C9C152A6A015B00089D11 /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
 		CEA11D812A671A0C00065C25 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		CEA11D852A671E2B00065C25 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "../../../Downloads/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		CEA11D872A67299200065C25 /* FirebaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseService.swift; sourceTree = "<group>"; };
@@ -90,6 +92,7 @@
 				CEE235962A60A3A60067FBFF /* SnippetRowView.swift */,
 				CEB2417D2A5CABB0002D5345 /* ContentView.swift */,
 				CEB241892A5CABD1002D5345 /* EmptyMusicPlayerView.swift */,
+				CE0C9C152A6A015B00089D11 /* Colors.swift */,
 				CEB4777C2A5DE51300BA38C4 /* SongPlayerView.swift */,
 				CEB2418D2A5CAF70002D5345 /* MusicPlayerView.swift */,
 				CEA11D872A67299200065C25 /* FirebaseService.swift */,
@@ -203,6 +206,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CEB4777D2A5DE51300BA38C4 /* SongPlayerView.swift in Sources */,
+				CE0C9C162A6A015B00089D11 /* Colors.swift in Sources */,
 				CEB2418E2A5CAF70002D5345 /* MusicPlayerView.swift in Sources */,
 				CEB2418C2A5CAC97002D5345 /* DocumentPicker.swift in Sources */,
 				CEB2418A2A5CABD1002D5345 /* EmptyMusicPlayerView.swift in Sources */,
