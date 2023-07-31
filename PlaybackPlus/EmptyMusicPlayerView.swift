@@ -53,17 +53,18 @@ struct Snippet: Identifiable, Codable, Equatable {
     let name: String
     var isPlaying: Bool
     var note: String
-    var imageUrl: String  // Add imageUrl property
+  //  var imageUrl: String  // Add imageUrl property
 
     // Standard initializer
-    init(id: UUID = UUID(), startTime: TimeInterval, endTime: TimeInterval, name: String, isPlaying: Bool = false, note: String = "", imageUrl: String = "") {
+    init(id: UUID = UUID(), startTime: TimeInterval, endTime: TimeInterval, name: String, isPlaying: Bool = false, note: String = ""
+        /*, imageUrl: String = ""*/) {
         self.id = id
         self.startTime = startTime
         self.endTime = endTime
         self.name = name
         self.isPlaying = isPlaying
         self.note = note
-        self.imageUrl = imageUrl  // Initialize imageUrl
+     //   self.imageUrl = imageUrl  // Initialize imageUrl
     }
 }
 
@@ -81,10 +82,10 @@ struct EmptyMusicPlayerView: View {
     @State private var showDocumentPicker = false
     @State private var songs: [Song] = []
     @StateObject private var playerViewModel = MusicPlayerViewModel()
-
+    
     @EnvironmentObject var sessionManager: SessionManager
     private var firestore: Firestore = Firestore.firestore()
-
+    
     var body: some View {
         NavigationView {
             VStack {
@@ -104,7 +105,8 @@ struct EmptyMusicPlayerView: View {
                 }
                 .onChange(of: fileURL) { newValue in
                     if let newValue = newValue {
-                        let newSong = Song(documentID: "", url: newValue, name: newValue.lastPathComponent, snippets: [])
+                        let newSongDocumentRef = firestore.collection("users").document(Auth.auth().currentUser?.uid ?? "default").collection("songs").document()
+                        let newSong = Song(documentID: newSongDocumentRef.documentID, url: newValue, name: newValue.lastPathComponent, snippets: [])
                         songs.append(newSong)
                         playerViewModel.selectSong(newSong)
                     }
@@ -134,7 +136,7 @@ struct EmptyMusicPlayerView: View {
         .background(AppColors.backgroundColor)
         .accentColor(AppColors.accentColor)
     }
-
+    
     
     private func deleteSongs(at offsets: IndexSet) {
         offsets.forEach { index in
@@ -159,8 +161,8 @@ struct EmptyMusicPlayerView: View {
             }
         }
     }
-
-
+    
+    
     private func logout() {
         do {
             try Auth.auth().signOut()
@@ -170,69 +172,71 @@ struct EmptyMusicPlayerView: View {
             print("Error signing out: \(error)")
         }
     }
-
+    
+    func optionalValue<T>(_ value: T) -> T? {
+        return value
+    }
+    
     private func loadSongs() {
-        guard let userId = Auth.auth().currentUser?.uid else {
-            return
-        }
-
-        let songsCollectionRef = firestore.collection("users").document(userId).collection("songs")
-        songsCollectionRef.getDocuments { snapshot, error in
-            if let error = error {
-                print("Failed to fetch songs: \(error)")
+            guard let userId = Auth.auth().currentUser?.uid else {
                 return
             }
 
-            guard let documents = snapshot?.documents else {
-                return
-            }
+            let songsCollectionRef = firestore.collection("users").document(userId).collection("songs")
+            songsCollectionRef.getDocuments { snapshot, error in
+                if let error = error {
+                    print("Failed to fetch songs: \(error)")
+                    return
+                }
 
-            DispatchQueue.main.async { // Update songs array on the main queue
-                songs = documents.compactMap { document in
-                    guard
-                        let urlString = document.data()["url"] as? String,
-                        let url = URL(string: urlString),
-                        let snippetsData = document.data()["snippets"] as? [[String: Any]]
-                    else {
-                        return nil
-                    }
+                guard let documents = snapshot?.documents else {
+                    return
+                }
 
-                    let snippets = snippetsData.compactMap { snippetDict -> Snippet? in
+                DispatchQueue.main.async { // Update songs array on the main queue
+                    songs = documents.compactMap { document in
                         guard
-                            let idString = snippetDict["id"] as? String,
-                            let id = UUID(uuidString: idString),
-                            let startTime = snippetDict["startTime"] as? TimeInterval,
-                            let endTime = snippetDict["endTime"] as? TimeInterval,
-                            let name = snippetDict["name"] as? String,
-                            let isPlaying = snippetDict["isPlaying"] as? Bool,
-                            let note = snippetDict["note"] as? String,
-                            let imageUrl = snippetDict["imageUrl"] as? String
+                            let urlString = document.data()["url"] as? String,
+                            let url = URL(string: urlString),
+                            let snippetsData = document.data()["snippets"] as? [[String: Any]],
+                                let name = document.data()["name"] as? String
+
                         else {
                             return nil
                         }
 
-                        return Snippet(
-                            id: id,
-                            startTime: startTime,
-                            endTime: endTime,
-                            name: name,
-                            isPlaying: isPlaying,
-                            note: note,
-                            imageUrl: imageUrl
-                        )
+                        let snippets = snippetsData.compactMap { snippetDict -> Snippet? in
+                            guard
+                                let idString = snippetDict["id"] as? String,
+                                let id = UUID(uuidString: idString),
+                                let startTime = snippetDict["startTime"] as? TimeInterval,
+                                let endTime = snippetDict["endTime"] as? TimeInterval,
+                                let name = snippetDict["name"] as? String,
+                                let isPlaying = snippetDict["isPlaying"] as? Bool,
+                                let note = snippetDict["note"] as? String
+                               // let imageUrl = snippetDict["imageUrl"] as? String
+                            else {
+                                return nil
+                            }
+
+                            return Snippet(
+                                id: id,
+                                startTime: startTime,
+                                endTime: endTime,
+                                name: name,
+                                isPlaying: isPlaying,
+                                note: note
+                           //     imageUrl: imageUrl
+                            )
+                        }
+
+                        return Song(url: url, name: name, snippets: snippets)
                     }
-
-                    let documentID = document.documentID
-                    let name = document.data()["name"] as? String ?? "" // Get the song name from Firestore
-                    let song = Song(documentID: documentID, url: url, name: name, snippets: snippets)
-
-                    return song
                 }
             }
         }
     }
 
-}
 
 struct EmptyMusicPlayerView_Previews: PreviewProvider {
     static var previews: some View {

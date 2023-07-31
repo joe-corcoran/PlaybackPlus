@@ -79,6 +79,9 @@ class SessionManager: ObservableObject {
     
     func saveSnippets(_ snippets: [Snippet], forSong song: Song, completion: @escaping (Result<Void, Error>) -> Void) {
             do {
+                
+                print("saveSnippet: song.documentID = \(song.documentID ?? "nil")")
+
                 // Convert the snippets to a dictionary representation
                 let snippetData = try snippets.map { snippet -> [String: Any] in
                     let snippetDict: [String: Any] = [

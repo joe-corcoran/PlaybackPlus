@@ -36,7 +36,7 @@ struct MusicPlayerView: View {
     @State private var isShowingSaveSnippetPopup = false
     @State private var snippetName: String = ""
     @State private var isRenaming = false
-    @State private var selectedImage: UIImage? = nil
+ //   @State private var selectedImage: UIImage? = nil
     @State private var isShowingImagePicker: Bool = false
     
     private var firestore: Firestore = Firestore.firestore()
@@ -45,6 +45,7 @@ struct MusicPlayerView: View {
         self._song = State(initialValue: song)
         self._songs = songs
     }
+    
     
     @Environment(\.presentationMode) private var presentationMode
     
@@ -162,14 +163,14 @@ struct MusicPlayerView: View {
                                     editingSnippet = snippet
                                     isShowingNoteEditor = true
                                 }
-                            Image(systemName: "photo")
+                         /*   Image(systemName: "photo")
                                 .resizable()
                                 .frame(width: 20, height: 20)
                                 .foregroundColor(.blue)
                                 .onTapGesture {
                                     selectedSnippet = snippet
                                     isShowingImagePicker = true
-                                }
+                                }*/
                         }
                         .onTapGesture {
                             editingSnippet = snippet
@@ -177,7 +178,7 @@ struct MusicPlayerView: View {
                         }
                         .sheet(item: $editingSnippet) { snippet in
                             if let index = song.snippets.firstIndex(where: { $0.id == snippet.id }) {
-                                NoteEditorView(note: $song.snippets[index].note, selectedImage: $selectedImage) {
+                                NoteEditorView(note: $song.snippets[index].note/*, selectedImage: $selectedImage*/) {
                                     saveSongToFirestore()
                                     editingSnippet = nil
                                 }
@@ -204,48 +205,39 @@ struct MusicPlayerView: View {
             print("Failed to initialize player: \(error)")
         }
     }
-    
-  private func saveSongToFirestore() {
-        guard let userId = Auth.auth().currentUser?.uid else {
-            return
-        }
+    private func saveSongToFirestore() {
+          guard let userId = Auth.auth().currentUser?.uid else {
+              return
+          }
+        
+          let songDocumentRef = firestore.collection("users").document(userId).collection("songs").document(song.documentID ?? "default")
+              
+          let data: [String: Any] = [
+              "url": song.url.absoluteString,
+              "name": song.name,
+              "snippets": song.snippets.map { snippet in
+                  // Convert snippet to dictionary
+                  return [
+                      "id": snippet.id.uuidString,
+                      "startTime": snippet.startTime,
+                      "endTime": snippet.endTime,
+                      "name": snippet.name,
+                      "isPlaying": snippet.isPlaying,
+                      "note": snippet.note
+                  ]
+              }
+          ]
+              
+          songDocumentRef.setData(data) { error in
+              if let error = error {
+                  print("Failed to save song to Firestore: \(error)")
+              } else {
+                  print("Song saved to Firestore")
+              }
+          }
+      }
 
-        let songsCollectionRef = firestore.collection("users").document(userId).collection("songs")
-        let songDocumentRef: DocumentReference
-
-        if let documentID = song.documentID {
-            songDocumentRef = songsCollectionRef.document(documentID)
-        } else {
-            songDocumentRef = songsCollectionRef.document()
-            song.documentID = songDocumentRef.documentID
-        }
-
-        let data: [String: Any] = [
-            "url": song.url.absoluteString,
-            "name": song.name,
-            "snippets": song.snippets.map { snippet in
-                // Convert snippet to dictionary
-                return [
-                    "id": snippet.id.uuidString,
-                    "startTime": snippet.startTime,
-                    "endTime": snippet.endTime,
-                    "name": snippet.name,
-                    "isPlaying": snippet.isPlaying,
-                    "note": snippet.note,
-                    "imageUrl": snippet.imageUrl
-                ]
-            }
-        ]
-
-        songDocumentRef.setData(data) { error in
-            if let error = error {
-                print("Failed to save song to Firestore: \(error)")
-            } else {
-                print("Song saved to Firestore")
-            }
-        }
-    }
-
+     
     private func deleteSnippets(at offsets: IndexSet) {
         offsets.forEach { index in
             // Delete the snippet from Firestore
@@ -319,7 +311,7 @@ struct MusicPlayerView: View {
     private func saveSnippet() {
         guard startTime < endTime else { return }
         
-        if let image = selectedImage {
+      /*  if let image = selectedImage {
             uploadImage(image) { imageUrl in
                 let snippet = Snippet(startTime: startTime, endTime: endTime, name: snippetName, note: "", imageUrl: imageUrl)
                 song.snippets.append(snippet)
@@ -332,7 +324,7 @@ struct MusicPlayerView: View {
                 // Save the song to Firestore
                 saveSongToFirestore()
             }
-        } else {
+        }*/ //else {
             let snippet = Snippet(startTime: startTime, endTime: endTime, name: snippetName)
             song.snippets.append(snippet)
             
@@ -343,28 +335,28 @@ struct MusicPlayerView: View {
             // Save the song to Firestore
             saveSongToFirestore()
         }
-    }
+  //  }
     
-    private func uploadImage(_ image: UIImage, completion: @escaping (String) -> Void) {
+  /*  private func uploadImage(_ image: UIImage, completion: @escaping (String) -> Void) {
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
             print("Failed to convert image to data")
             return
-        }
+        }*/
         
-        let storageRef = Storage.storage().reference()
-        let imageName = UUID().uuidString
-        let imageRef = storageRef.child("images/\(imageName).jpg")
+       // let storageRef = Storage.storage().reference()
+     //   let imageName = UUID().uuidString
+     //   let imageRef = storageRef.child("images/\(imageName).jpg")
         
-        let metadata = StorageMetadata()
-        metadata.contentType = "image/jpeg"
+     //   let metadata = StorageMetadata()
+     //   metadata.contentType = "image/jpeg"
         
-        imageRef.putData(imageData, metadata: metadata) { _, error in
-            if let error = error {
-                print("Failed to upload image: \(error)")
-                return
-            }
+      //  imageRef.putData(imageData, metadata: metadata) { _, error in
+     //       if let error = error {
+      //          print("Failed to upload image: \(error)")
+      //          return
+       //     }
             
-            imageRef.downloadURL { url, error in
+        /*    imageRef.downloadURL { url, error in
                 if let error = error {
                     print("Failed to get download URL: \(error)")
                     return
@@ -373,9 +365,9 @@ struct MusicPlayerView: View {
                 if let downloadURL = url?.absoluteString {
                     completion(downloadURL)
                 }
-            }
-        }
-    }
+            } */
+      //  }
+    //}
     
     private func ensurePlayerInitialized() {
         if player == nil {
@@ -387,13 +379,13 @@ struct MusicPlayerView: View {
         }
     }
     
-    private func handleImageSelection(_ image: UIImage, for snippet: Snippet) {
+   /* private func handleImageSelection(_ image: UIImage, for snippet: Snippet) {
         if let snippetIndex = song.snippets.firstIndex(where: { $0.id == snippet.id }) {
             uploadImage(image) { imageUrl in
                 song.snippets[snippetIndex].imageUrl = imageUrl
             }
         }
-    }
+    }*/
     
     private func restartSnippet(_ snippet: Snippet) {
         if let player = self.player {
@@ -463,14 +455,14 @@ struct MusicPlayerView: View {
 
 struct NoteEditorView: View {
     @Binding var note: String
-    @Binding var selectedImage: UIImage?
+   // @Binding var selectedImage: UIImage?
     var onDismiss: () -> Void
 
     var body: some View {
         VStack {
-            HStack {
+         /*   HStack {
                 Spacer()
-                Button(action: {
+               / Button(action: {
                     // Handle image selection here
                 }) {
                     Image(systemName: "photo")
@@ -478,7 +470,7 @@ struct NoteEditorView: View {
                         .frame(width: 20, height: 20)
                 }
                 .padding(.trailing)
-            }
+            } */
             TextEditor(text: $note)
             Button("Done", action: onDismiss)
                 .padding()
