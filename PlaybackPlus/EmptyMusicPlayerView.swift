@@ -177,66 +177,68 @@ struct EmptyMusicPlayerView: View {
         return value
     }
     
-    private func loadSongs() {
-            guard let userId = Auth.auth().currentUser?.uid else {
+     private func loadSongs() {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            return
+        }
+
+        let songsCollectionRef = firestore.collection("users").document(userId).collection("songs")
+        songsCollectionRef.getDocuments { snapshot, error in
+            if let error = error {
+                print("Failed to fetch songs: \(error)")
                 return
             }
 
-            let songsCollectionRef = firestore.collection("users").document(userId).collection("songs")
-            songsCollectionRef.getDocuments { snapshot, error in
-                if let error = error {
-                    print("Failed to fetch songs: \(error)")
-                    return
-                }
+            guard let documents = snapshot?.documents else {
+                return
+            }
 
-                guard let documents = snapshot?.documents else {
-                    return
-                }
+            DispatchQueue.main.async { // Update songs array on the main queue
+                songs = documents.compactMap { document in
+                    guard
+                        let urlString = document.data()["url"] as? String,
+                        let url = URL(string: urlString),
+                        let snippetsData = document.data()["snippets"] as? [[String: Any]],
+                        let name = document.data()["name"] as? String
+                    else {
+                        return nil
+                    }
 
-                DispatchQueue.main.async { // Update songs array on the main queue
-                    songs = documents.compactMap { document in
+                    let snippets = snippetsData.compactMap { snippetDict -> Snippet? in
                         guard
-                            let urlString = document.data()["url"] as? String,
-                            let url = URL(string: urlString),
-                            let snippetsData = document.data()["snippets"] as? [[String: Any]],
-                                let name = document.data()["name"] as? String
-
+                            let idString = snippetDict["id"] as? String,
+                            let id = UUID(uuidString: idString),
+                            let startTime = snippetDict["startTime"] as? TimeInterval,
+                            let endTime = snippetDict["endTime"] as? TimeInterval,
+                            let name = snippetDict["name"] as? String,
+                            let isPlaying = snippetDict["isPlaying"] as? Bool,
+                            let note = snippetDict["note"] as? String
                         else {
                             return nil
                         }
 
-                        let snippets = snippetsData.compactMap { snippetDict -> Snippet? in
-                            guard
-                                let idString = snippetDict["id"] as? String,
-                                let id = UUID(uuidString: idString),
-                                let startTime = snippetDict["startTime"] as? TimeInterval,
-                                let endTime = snippetDict["endTime"] as? TimeInterval,
-                                let name = snippetDict["name"] as? String,
-                                let isPlaying = snippetDict["isPlaying"] as? Bool,
-                                let note = snippetDict["note"] as? String
-                               // let imageUrl = snippetDict["imageUrl"] as? String
-                            else {
-                                return nil
-                            }
-
-                            return Snippet(
-                                id: id,
-                                startTime: startTime,
-                                endTime: endTime,
-                                name: name,
-                                isPlaying: isPlaying,
-                                note: note
-                           //     imageUrl: imageUrl
-                            )
-                        }
-
-                        return Song(url: url, name: name, snippets: snippets)
+                        return Snippet(
+                            id: id,
+                            startTime: startTime,
+                            endTime: endTime,
+                            name: name,
+                            isPlaying: isPlaying,
+                            note: note
+                        )
                     }
+
+                    return Song(url: url, name: name, snippets: snippets)
+                }
+
+                // Now that we're sure the songs array has been updated, we can select the first song.
+                if let firstSong = songs.first {
+                    playerViewModel.selectSong(firstSong)
                 }
             }
         }
     }
 
+}
 
 struct EmptyMusicPlayerView_Previews: PreviewProvider {
     static var previews: some View {

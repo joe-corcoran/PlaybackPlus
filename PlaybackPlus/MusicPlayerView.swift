@@ -278,7 +278,9 @@ struct MusicPlayerView: View {
         isPlaying.toggle()
         
         if isPlaying {
-            player.play()
+            if let player = player {
+                player.currentTime = currentTime
+            }
             timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
                 guard !isScrubbing else { return }
                 self.currentTime = self.player.currentTime
@@ -410,9 +412,11 @@ struct MusicPlayerView: View {
             
             if song.snippets[index].isPlaying {
                 // Initialize the player if necessary
-                if player == nil {
+                if player == nil || player.currentTime < snippet.startTime || player.currentTime > snippet.endTime {
                     do {
                         self.player = try AVAudioPlayer(contentsOf: song.url)
+                        // Start playing the snippet from the beginning
+                        player.currentTime = snippet.startTime
                     } catch {
                         print("Failed to initialize player: \(error)")
                         return
@@ -420,11 +424,10 @@ struct MusicPlayerView: View {
                 }
                 
                 // Start playing the snippet
-                player.currentTime = snippet.startTime
                 player.play()
                 
                 // Schedule a timer to pause the player when the snippet ends
-                timer = Timer.scheduledTimer(withTimeInterval: snippet.endTime - snippet.startTime, repeats: false) { _ in
+                timer = Timer.scheduledTimer(withTimeInterval: snippet.endTime - player.currentTime, repeats: false) { _ in
                     if let player = self.player {
                         player.pause()
                     }
@@ -443,7 +446,7 @@ struct MusicPlayerView: View {
             }
         }
     }
-    
+
     private func formatTimeInterval(_ timeInterval: TimeInterval) -> String {
         let minutes = Int(timeInterval) / 60
         let seconds = Int(timeInterval) % 60
