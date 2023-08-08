@@ -21,7 +21,7 @@ struct DocumentPicker: UIViewControllerRepresentable {
 
     func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: UIViewControllerRepresentableContext<DocumentPicker>) {
         // No update needed
-    }
+    }  
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)

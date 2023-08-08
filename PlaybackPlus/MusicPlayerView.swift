@@ -15,6 +15,7 @@ import FirebaseAnalytics
 struct MusicPlayerView: View {
     @State var song: Song
     @Binding var songs: [Song]
+    @State private var playerIsInitialized: Bool = false
     @State private var selectedSnippet: Snippet? = nil
     @State private var isShowingNoteEditor = false
     @State private var editingSnippet: Snippet? = nil
@@ -36,7 +37,7 @@ struct MusicPlayerView: View {
     @State private var isShowingSaveSnippetPopup = false
     @State private var snippetName: String = ""
     @State private var isRenaming = false
- //   @State private var selectedImage: UIImage? = nil
+    //   @State private var selectedImage: UIImage? = nil
     @State private var isShowingImagePicker: Bool = false
     
     private var firestore: Firestore = Firestore.firestore()
@@ -111,134 +112,182 @@ struct MusicPlayerView: View {
                     }
                 }
             }
-                    
-                    
-                    // Save button
-                    Button("Save Snippet", action: {
-                        isShowingSaveSnippetPopup = true
+            
+            
+            // Save button
+            Button("Save Snippet", action: {
+                isShowingSaveSnippetPopup = true
+            })
+            .padding()
+            .sheet(isPresented: $isShowingSaveSnippetPopup) {
+                VStack {
+                    TextField("Snippet Name", text: $snippetName)
+                        .padding()
+                    Button("Save", action: {
+                        saveSnippet()
+                        isShowingSaveSnippetPopup = false
                     })
                     .padding()
-                    .sheet(isPresented: $isShowingSaveSnippetPopup) {
-                        VStack {
-                            TextField("Snippet Name", text: $snippetName)
-                                .padding()
-                            Button("Save", action: {
-                                saveSnippet()
-                                isShowingSaveSnippetPopup = false
-                            })
-                            .padding()
-                        }
-                    }
                 }
-                
-                // Snippets list
-                List {
-                    ForEach(song.snippets.indices, id: \.self) { index in
-                        let snippet = song.snippets[index]
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text("\(formatTimeInterval(snippet.startTime)) - \(formatTimeInterval(snippet.endTime))")
-                                Text(snippet.name)
-                                    .font(.caption)
-                                Text("Duration: \(formatTimeInterval(snippet.endTime - snippet.startTime))")
-                                    .font(.caption)
-                            }
-                            Spacer()
-                            Image(systemName: "backward.fill")
-                                .resizable()
-                                .frame(width: 20, height: 20)
-                                .foregroundColor(.blue)
-                                .onTapGesture {
-                                    restartSnippet(snippet)
-                                }
-                            Image(systemName: snippet.isPlaying ? "pause.circle" : "play.circle")
-                                .resizable()
-                                .frame(width: 20, height: 20)
-                                .foregroundColor(.blue)
-                                .onTapGesture {
-                                    toggleSnippetPlayback(snippet)
-                                }
-                            Text("Edit Note")
-                                .onTapGesture {
-                                    editingSnippet = snippet
-                                    isShowingNoteEditor = true
-                                }
-                         /*   Image(systemName: "photo")
-                                .resizable()
-                                .frame(width: 20, height: 20)
-                                .foregroundColor(.blue)
-                                .onTapGesture {
-                                    selectedSnippet = snippet
-                                    isShowingImagePicker = true
-                                }*/
+            }
+        }
+        
+        // Snippets list
+        List {
+            ForEach(song.snippets.indices, id: \.self) { index in
+                let snippet = song.snippets[index]
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text("\(formatTimeInterval(snippet.startTime)) - \(formatTimeInterval(snippet.endTime))")
+                        Text(snippet.name)
+                            .font(.caption)
+                        Text("Duration: \(formatTimeInterval(snippet.endTime - snippet.startTime))")
+                            .font(.caption)
+                    }
+                    Spacer()
+                    Image(systemName: "backward.fill")
+                        .resizable()
+                        .frame(width: 20, height: 20)
+                        .foregroundColor(.blue)
+                        .onTapGesture {
+                            restartSnippet(snippet)
                         }
+                    Image(systemName: snippet.isPlaying ? "pause.circle" : "play.circle")
+                        .resizable()
+                        .frame(width: 20, height: 20)
+                        .foregroundColor(.blue)
+                        .onTapGesture {
+                            toggleSnippetPlayback(snippet)
+                        }
+                    Text("Edit Note")
                         .onTapGesture {
                             editingSnippet = snippet
                             isShowingNoteEditor = true
                         }
-                        .sheet(item: $editingSnippet) { snippet in
-                            if let index = song.snippets.firstIndex(where: { $0.id == snippet.id }) {
-                                NoteEditorView(note: $song.snippets[index].note/*, selectedImage: $selectedImage*/) {
-                                    saveSongToFirestore()
-                                    editingSnippet = nil
-                                }
-                            }
+                    /*   Image(systemName: "photo")
+                     .resizable()
+                     .frame(width: 20, height: 20)
+                     .foregroundColor(.blue)
+                     .onTapGesture {
+                     selectedSnippet = snippet
+                     isShowingImagePicker = true
+                     }*/
+                }
+                .onTapGesture {
+                    editingSnippet = snippet
+                    isShowingNoteEditor = true
+                }
+                .sheet(item: $editingSnippet) { snippet in
+                    if let index = song.snippets.firstIndex(where: { $0.id == snippet.id }) {
+                        NoteEditorView(note: $song.snippets[index].note/*, selectedImage: $selectedImage*/) {
+                            saveSongToFirestore()
+                            editingSnippet = nil
                         }
                     }
-                    .onDelete(perform: deleteSnippets)
-                }
-                .onAppear {
-                    loadAudioPlayer()
-                }
-                .onDisappear {
-                    cleanupAudioPlayer()
                 }
             }
-        
-    
-    private func loadAudioPlayer() {
-        do {
-            self.player = try AVAudioPlayer(contentsOf: song.url)
-            self.duration = self.player.duration
-            self.endTime = self.player.duration
-        } catch {
-            print("Failed to initialize player: \(error)")
+            .onDelete(perform: deleteSnippets)
+        }
+        .onAppear {
+            loadAudioPlayer()
+        }
+        .onDisappear {
+            cleanupAudioPlayer()
         }
     }
-    private func saveSongToFirestore() {
-          guard let userId = Auth.auth().currentUser?.uid else {
-              return
-          }
+    
+    
+    private func loadAudioPlayer() {
+        if FileManager.default.fileExists(atPath: song.url.path) {
+            do {
+                self.player = try AVAudioPlayer(contentsOf: song.url)
+                self.duration = self.player.duration
+                self.endTime = self.player.duration
+            } catch {
+                print("Failed to initialize player: \(error)")
+                // Perhaps display an alert or some other user-facing indication of the error
+            }
+        } else {
+            print("File does not exist: \(song.url)")
+            // Handle the missing file, possibly by showing an alert to the user
+        }
+    }
+
+    
+    private func ensurePlayerIsInitialized() {
+        if !playerIsInitialized {
+            initializePlayer()
+        }
+    }
+
+    
+    private func initializePlayer() {
+        guard !playerIsInitialized else { return }
         
-          let songDocumentRef = firestore.collection("users").document(userId).collection("songs").document(song.documentID ?? "default")
-              
-          let data: [String: Any] = [
-              "url": song.url.absoluteString,
-              "name": song.name,
-              "snippets": song.snippets.map { snippet in
-                  // Convert snippet to dictionary
-                  return [
-                      "id": snippet.id.uuidString,
-                      "startTime": snippet.startTime,
-                      "endTime": snippet.endTime,
-                      "name": snippet.name,
-                      "isPlaying": snippet.isPlaying,
-                      "note": snippet.note
-                  ]
-              }
-          ]
-              
-          songDocumentRef.setData(data) { error in
-              if let error = error {
-                  print("Failed to save song to Firestore: \(error)")
-              } else {
-                  print("Song saved to Firestore")
-              }
-          }
-      }
+        do {
+            self.player = try AVAudioPlayer(contentsOf: song.url)
+            self.playerIsInitialized = true
+        } catch {
+            print("Failed to initialize player for URL \(song.url): \(error)")
+            self.playerIsInitialized = false
+        }
+    }
+
+
+    private func saveSongToFirestore() {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            return
+        }
+
+        let songDocumentRef = firestore.collection("users").document(userId).collection("songs").document(song.documentID ?? "default")
+        
+        let relativePath = song.url.path.replacingOccurrences(of: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.path, with: "")
+        
+        let data: [String: Any] = [
+            "url": relativePath,
+            "name": song.name,
+            "snippets": song.snippets.map { snippet in
+                // Convert snippet to dictionary
+                return [
+                    "id": snippet.id.uuidString,
+                    "startTime": snippet.startTime,
+                    "endTime": snippet.endTime,
+                    "name": snippet.name,
+                    "isPlaying": snippet.isPlaying,
+                    "note": snippet.note
+                ]
+            }
+        ]
+            
+        songDocumentRef.setData(data) { error in
+            if let error = error {
+                print("Failed to save song to Firestore: \(error)")
+            } else {
+                print("Song saved to Firestore")
+            }
+        }
+    }
+
+    private func deleteSongFromFirestore(songID: String) {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            return
+        }
+        
+        let songDocumentRef = firestore.collection("users").document(userId).collection("songs").document(songID)
+        
+        songDocumentRef.delete() { error in
+            if let error = error {
+                print("Failed to delete song: \(error)")
+                return
+            }
+            print("Song successfully deleted from Firestore")
+        }
+    }
+
 
      
     private func deleteSnippets(at offsets: IndexSet) {
+        ensurePlayerIsInitialized()
         offsets.forEach { index in
             // Delete the snippet from Firestore
             guard let userId = Auth.auth().currentUser?.uid, let songDocumentID = song.documentID else {
@@ -265,28 +314,35 @@ struct MusicPlayerView: View {
 
 
     private func cleanupAudioPlayer() {
-        player.stop()
+        ensurePlayerIsInitialized()
+        if let player = player {
+            player.stop()
+        }
         timer?.invalidate()
         timer = nil
         if let index = songs.firstIndex(where: { $0.id == song.id }) {
             songs[index] = song
         }
     }
+
     
     private func togglePlayback() {
         ensurePlayerInitialized()
         isPlaying.toggle()
-        
+
+        guard let player = self.player else {
+            print("Player is not initialized.")
+            return
+        }
+
         if isPlaying {
-            if let player = player {
-                player.currentTime = currentTime
-            }
+            player.currentTime = currentTime
             timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
                 guard !isScrubbing else { return }
-                self.currentTime = self.player.currentTime
-                
+                self.currentTime = player.currentTime
+
                 if self.currentTime >= self.endTime {
-                    self.player.currentTime = self.startTime
+                    player.currentTime = self.startTime
                 }
             }
         } else {
@@ -295,8 +351,10 @@ struct MusicPlayerView: View {
             timer = nil
         }
     }
+
     
     private func scrub(isScrubbing: Bool) {
+        ensurePlayerIsInitialized()
         if isScrubbing {
             self.isScrubbing = true
             player.currentTime = currentTime
@@ -311,6 +369,7 @@ struct MusicPlayerView: View {
     }
     
     private func saveSnippet() {
+        ensurePlayerIsInitialized()
         guard startTime < endTime else { return }
         
       /*  if let image = selectedImage {
@@ -390,6 +449,7 @@ struct MusicPlayerView: View {
     }*/
     
     private func restartSnippet(_ snippet: Snippet) {
+        ensurePlayerIsInitialized()
         if let player = self.player {
             player.currentTime = snippet.startTime
             player.play()
@@ -457,6 +517,7 @@ struct MusicPlayerView: View {
 
 
 struct NoteEditorView: View {
+    
     @Binding var note: String
    // @Binding var selectedImage: UIImage?
     var onDismiss: () -> Void
